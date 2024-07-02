@@ -3,13 +3,15 @@ const express = require("express");
 const app = express();
 
 
-// app.get("/", (req, res) => {});
+app.get("/", (req, res) => {
+    res.send("Hello HNG!! Yor server is running")
+});
 app.get("/api/hello", async (req, res) => {
   const visitor = req.query.visitor_name || "Guest";
 
   res.json({
-    client_ip: "127.0.0.1", // The IP address of the requester
-    location: "New York", // The city of the requester
+    client_ip: "127.0.0.1",
+    location: "New York",
     greeting: `Hello, ${visitor}!, the temperature is 11 degrees Celcius in New York`,
   });
 });
