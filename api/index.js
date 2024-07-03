@@ -28,12 +28,15 @@ app.get("/api/hello", async (req, res) => {
   console.log(weatherData.current.temp_c);
 
 
+const responseData = {
+      client_ip: clientIp,
+      location: city,
+      greeting: `Hello, ${visitor}!, the temperature is ${weatherData.current.temp_c} degrees Celsius in ${city}`,
+    };
 
-  res.send({
-    client_ip: clientIp,
-    location: city,
-    greeting: `Hello, ${visitor}!, the temperature is ${weatherData.current.temp_c} degrees Celcius in ${city}`,
-  });
+    res.setHeader("Content-Type", "application/json"); // Set Content-Type header
+    res.send(responseData);
+  
 });
 
 app.listen(8000, () => console.log("Server ready on port 8000."));
