@@ -4,7 +4,8 @@ const app = express();
 require("dotenv").config();
 
 
-const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+// const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+const WEATHER_API_KEY = "f099db1e5ec440ff9d583044240307";
 
 app.get("/", (req, res) => {
   res.send("Hello HNG!! Yor server is running");
@@ -12,9 +13,8 @@ app.get("/", (req, res) => {
 app.get("/api/hello", async (req, res) => {
   const visitor = req.query.visitor_name || "Guest";
   const clientIp = requestIp.getClientIp(req);
-  // const clientIp = "63.116.61.253";
 
-
+  
  const locationResponse = await fetch(
    `http://api.weatherapi.com/v1/ip.json?key=${WEATHER_API_KEY}&q=${clientIp}`
  );
