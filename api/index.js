@@ -15,7 +15,10 @@ app.get("/api/hello", async (req, res) => {
   });
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port);
+app.listen(8000, () => console.log("Server ready on port 3000."));
+
+module.exports = app;
+
+
 
 // http://localhost:3000/api/hello?visitor_name=%22Mark%22
