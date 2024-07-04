@@ -24,7 +24,7 @@ app.get("/api/hello", async (req, res) => {
   );
   const weatherData = await weatherResponse.json();
   const responseData = {
-    client_ip: clientIp,
+    client_ip: testIp,
     location: city,
     greeting: `Hello, ${visitor}!, the temperature is ${weatherData.current.temp_c} degrees Celsius in ${city}`,
   };
