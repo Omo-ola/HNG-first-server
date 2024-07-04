@@ -10,14 +10,11 @@ app.get("/", (req, res) => {
 });
 app.get("/api/hello", async (req, res) => {
   const visitor = req.query.visitor_name.replace(/["']/g, "") || "Guest";
-  const ip = await fetch(
-    `http://api.weatherapi.com/v1/ip.json?key=${WEATHER_API_KEY}&q=auto:ip`
-  );
-  const addr = await ip.json();
-  const clientIp = addr.ip
+  const testIp = req.ip;
+  console.log(`My test Ip adsrress = ${testIp}`);
 
   const locationResponse = await fetch(
-    `http://api.weatherapi.com/v1/ip.json?key=${WEATHER_API_KEY}&q=${clientIp}`
+    `http://api.weatherapi.com/v1/ip.json?key=${WEATHER_API_KEY}&q=${testIp}`
   );
   const locationData = await locationResponse.json();
   const { lat, lon,city} = locationData;
@@ -26,8 +23,6 @@ app.get("/api/hello", async (req, res) => {
     `http://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${lat},${lon}`
   );
   const weatherData = await weatherResponse.json();
-  console.log(weatherData.current.temp_c);
-
   const responseData = {
     client_ip: clientIp,
     location: city,
