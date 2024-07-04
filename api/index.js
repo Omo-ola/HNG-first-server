@@ -19,20 +19,12 @@ async function getIp(req, res) {
     const data = await zig.json();
     const { ip, city, latitude, longitude } = data;
 
-    const weatherInfo = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m`
-    );
-    const weather = await weatherInfo.json();
-
   const weatherResponse = await fetch(
     `http://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${latitude},${longitude}`
   );
     const weatherData = await weatherResponse.json();
    const temp = weatherData.current.temp_c;
 
-
-
-    // const temp = weather.hourly.temperature_2m[0];
     const greeting = `Hello ${visitor_name}!, the temperature is ${temp} degrees Celsius in ${city}`;
 
     return res.status(200).json({ client_ip: ip, location: city, greeting });
