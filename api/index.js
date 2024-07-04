@@ -11,7 +11,7 @@ app.get("/", (req, res) => {
   res.send("Hello HNG!! Yor server is running");
 });
 app.get("/api/hello", async (req, res) => {
-  const visitor = req.query.visitor_name || "Guest";
+  const visitor = req.query.visitor_name.replace(/["']/g, "");|| "Guest";
   const clientIp = requestIp.getClientIp(req);
 
   
