@@ -20,7 +20,7 @@ app.get("/api/hello", async (req, res) => {
     `http://api.weatherapi.com/v1/ip.json?key=${WEATHER_API_KEY}&q=${clientIp}`
   );
   const locationData = await locationResponse.json();
-  const { lat, lon} = locationData;
+  const { lat, lon,city} = locationData;
 
   const weatherResponse = await fetch(
     `http://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${lat},${lon}`
@@ -30,8 +30,8 @@ app.get("/api/hello", async (req, res) => {
 
   const responseData = {
     client_ip: clientIp,
-    location: addr.region,
-    greeting: `Hello, ${visitor}!, the temperature is ${weatherData.current.temp_c} degrees Celsius in ${addr.region}`,
+    location: city,
+    greeting: `Hello, ${visitor}!, the temperature is ${weatherData.current.temp_c} degrees Celsius in ${city}`,
   };
 
   res.setHeader("Content-Type", "application/json");
