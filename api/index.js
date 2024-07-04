@@ -1,47 +1,38 @@
 const express = require("express");
+require("dotenv").config(); // Load environment variables from .env file
+
 const app = express();
-require("dotenv").config();
 
-// const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
-const WEATHER_API_KEY = "f099db1e5ec440ff9d583044240307";
+const PORT = process.env.PORT || 3001;
 
-app.get("/", (req, res) => {
-  res.send("Hello HNG!! Yor server is running");
-});
-app.get("/api/hello", async (req, res) => {
-  const visitor = req.query.visitor_name.replace(/["']/g, "") || "Guest";
-  const testIp = req.ip;
-  console.log(`My test Ip adsrress = ${testIp}`);
+async function getIp(req, res) {
+  try {
+    const xp = (req.headers["x-forwarded-for"] || "").split(",")[0];
+console.log(xp);
+    const { visitor_name } = req.query;
 
-  const locationResponse = await fetch(
-    `http://api.weatherapi.com/v1/ip.json?key=${WEATHER_API_KEY}&q=${testIp}`
-  );
-  const locationData = await locationResponse.json();
-  const { lat, lon, city } = locationData;
+    const zig = await fetch(`https://ipapi.co/${xp}/json/`);
+    const data = await zig.json();
+    const { ip, city, latitude, longitude } = data;
+    console.log(`data ${data}`);
 
-  const weatherResponse = await fetch(
-    `http://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${lat},${lon}`
-  );
-  const weatherData = await weatherResponse.json();
-  let temp;
+    const weatherInfo = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m`
+    );
+    const weather = await weatherInfo.json();
+    const temp = weather.hourly.temperature_2m[0];
+    const greeting = `Hello ${visitor_name}!, the temperature is ${temp} degrees Celsius in ${city}`;
 
-  if (temp === undefined) {
-    temp = "27.2";
+    return res.status(200).json({ client_ip: ip, location: city, greeting });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: error.message });
   }
-  else {
-    temp = weatherData.current.temp_c;
-  }
-  console.log(temp);
-  const responseData = {
-    client_ip: testIp,
-    location: city || "New York",
-    greeting: `Hello, ${visitor}!, the temperature is ${temp} degrees Celsius in ${city || "New York"}`,
-  };
+}
 
-  res.setHeader("Content-Type", "application/json");
-  res.send(responseData);
-});
+app.get("/api/hello", getIp);
 
-app.listen(8000, () => console.log("Server ready on port 8000."));
+app.listen(PORT, () => console.log("listening on port" + PORT));
+
 
 module.exports = app;
