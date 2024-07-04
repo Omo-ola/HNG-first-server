@@ -1,63 +1,71 @@
 const express = require('express');
-const requestIp = require('request-ip');
 const axios = require('axios');
-require('dotenv').config();
-
-
+const { IPinfoWrapper } = require('node-ipinfo');
 const app = express();
-const port = process.env.PORT || 3000;
-const weatherApiKey = process.env.WEATHER_API_KEY
+const port = 3001;
 
+const ipinfoToken = 'cb0526a54b8e6e'; 
+const ipinfo = new IPinfoWrapper(ipinfoToken);
+const meteoWeatherAPI = 'https://api.open-meteo.com/v1/forecast?';
 
-app.use(requestIp.mw());
+// Function to get external IP address
+async function getExternalIp() {
+    const response = await axios.get('https://api.ipify.org?format=json');
+    return response.data.ip;
+}
 
+app.get('/api/hello', async (req, res) => {
+    const visitorName = req.query.visitor_name;
 
+    if (!visitorName) {
+        return res.status(400).json({
+            message: 'Please enter your name in the URL'
+        });
+    }
 
-app.get('/api/hello',async(req,res)=>{
-    const visitorName = req.query.visitor_name 
-    let clientIp = req.ip; 
+    try {
+        let clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
-    if (clientIp === '::1') {
-        clientIp = '129.0.60.27';
-      }
+        if (clientIp === '::1' || clientIp === '127.0.0.1') {
+            clientIp = await getExternalIp();
+        }
 
-    try   {       
+        // Fetch location data using ipinfo.io
+        const locationResponse = await ipinfo.lookupIp(clientIp);
 
-        if(!visitorName){
-            return res.status(400).json({ error: 'Name is required' });
-        } 
+        console.log('Location Response:', locationResponse);
 
-        const response = await axios.get(`https://ipapi.co/${clientIp}/json`);
-        const ip=response.data.ip
-        const location=response.data.city
-        console.log('IPinfo response:', response.data.ip)
+        if (!locationResponse.city || !locationResponse.loc) {
+            throw new Error('Location data not available');
+        }
 
+        const { city, loc } = locationResponse;
 
-        const weatherResponse = await axios.get(`https://api.weatherapi.com/v1/current.json?key=${weatherApiKey}&q=${location}&aqi=no`);
+        // Extract latitude and longitude from loc
+        const [latitude, longitude] = loc.split(',');
 
-        const temp = weatherResponse.data.current.temp_c
+        const weatherResponse = await axios.get(`${meteoWeatherAPI}&latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&forecast_days=1`);
+        const currentTemperature = weatherResponse.data.current.temperature_2m;
 
-        const responseUser = {
-            client_ip: ip,
-            location: location,
-            greeting: `Hello, ${visitorName}!, the temperature is ${temp} degrees Celsius in ${location}`
-          };
-        console.log(weatherResponse.data.current.temp_c);
-        res.status(200).json({responseUser})
+        const greeting = `Hello ${visitorName}!, the temperature is ${currentTemperature}°C in ${city}`;
 
-    }catch(error){
-        console.error('Error fetching data:', error.message);
-        res.status(500).json({error})
-    }   
+        res.json({
+            client_ip: clientIp,
+            Location: city,
+            greeting,
+        });
 
+        console.log(clientIp);
+        console.log(city);
+        console.log(greeting);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Error Fetching Data'
+        });
+    }
+});
 
-
-})
-
-app.use((req, res, next) => {
-    res.status(404).send('404 Not Found');
-  });
-
-app.listen(port,()=>{
-    console.log(`listening at port ${port}`);
-})
+app.listen(port, () => {
+    console.log(`Hurray, server is running on http://localhost:${port}`);
+});
