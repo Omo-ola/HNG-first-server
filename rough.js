@@ -1,71 +1,34 @@
 const express = require('express');
-const axios = require('axios');
-const { IPinfoWrapper } = require('node-ipinfo');
+require('dotenv').config(); // Load environment variables from .env file
+
 const app = express();
-const port = 3001;
 
-const ipinfoToken = 'cb0526a54b8e6e'; 
-const ipinfo = new IPinfoWrapper(ipinfoToken);
-const meteoWeatherAPI = 'https://api.open-meteo.com/v1/forecast?';
+const PORT = process.env.PORT || 3000;
 
-// Function to get external IP address
-async function getExternalIp() {
-    const response = await axios.get('https://api.ipify.org?format=json');
-    return response.data.ip;
+async function getIp(req,res) {
+    try {
+        const xp = (req.headers['x-forwarded-for'] || '').split(',')[0];
+
+        const {visitor_name} = req.query
+
+        const zig = await fetch(`https://ipapi.co/${xp}/json/`);
+        const data = await zig.json();
+        const {ip, city, latitude, longitude} = data;
+
+        const weatherInfo = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m`);
+        const weather = await weatherInfo.json();
+        const temp = weather.hourly.temperature_2m[0];
+        const greeting = `Hello ${visitor_name}!, the temperature is ${temp} degrees Celsius in ${city}`;
+
+        return res.status(200).json({client_ip:ip,location:city,greeting});
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({error: error.message});
+    }
+
 }
 
-app.get('/api/hello', async (req, res) => {
-    const visitorName = req.query.visitor_name;
+app.get('/api/hello', getIp)
 
-    if (!visitorName) {
-        return res.status(400).json({
-            message: 'Please enter your name in the URL'
-        });
-    }
-
-    try {
-        let clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-
-        if (clientIp === '::1' || clientIp === '127.0.0.1') {
-            clientIp = await getExternalIp();
-        }
-
-        // Fetch location data using ipinfo.io
-        const locationResponse = await ipinfo.lookupIp(clientIp);
-
-        console.log('Location Response:', locationResponse);
-
-        if (!locationResponse.city || !locationResponse.loc) {
-            throw new Error('Location data not available');
-        }
-
-        const { city, loc } = locationResponse;
-
-        // Extract latitude and longitude from loc
-        const [latitude, longitude] = loc.split(',');
-
-        const weatherResponse = await axios.get(`${meteoWeatherAPI}&latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&forecast_days=1`);
-        const currentTemperature = weatherResponse.data.current.temperature_2m;
-
-        const greeting = `Hello ${visitorName}!, the temperature is ${currentTemperature}°C in ${city}`;
-
-        res.json({
-            client_ip: clientIp,
-            Location: city,
-            greeting,
-        });
-
-        console.log(clientIp);
-        console.log(city);
-        console.log(greeting);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            message: 'Error Fetching Data'
-        });
-    }
-});
-
-app.listen(port, () => {
-    console.log(`Hurray, server is running on http://localhost:${port}`);
-});
+app.listen(PORT, () => console.log('listening on port' + PORT));
